@@ -2,9 +2,19 @@ from flask import Flask
 import google.generativeai as genai
 from constants import GEMINI_API_KEY, MODEL_NAME  # Import API key and model name from constants
 from flask import request, jsonify
+from flask_cors import CORS, cross_origin
 
 # Initialize Flask application
 app = Flask(__name__)
+cors = CORS(app, resources={
+    r"/*": {  # Apply to all routes
+        "origins": "*",  # Allow your frontend origin
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Allow these HTTP methods
+        "allow_headers": ["Content-Type", "Authorization", "baggage"],  # Explicitly allow the 'baggage' header
+        "expose_headers": ["Content-Range", "X-Content-Range"],
+        "supports_credentials": True  # Enable if you need to send cookies
+    }
+})
 
 # Configure Gemini AI with API key
 genai.configure(api_key=GEMINI_API_KEY)
@@ -13,6 +23,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel(MODEL_NAME)
 
 @app.route('/', methods=['POST'])
+@cross_origin(supports_credentials=True)
 def index():
     """
     Main endpoint that handles POST requests for text generation
