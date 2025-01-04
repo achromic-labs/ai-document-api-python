@@ -11,25 +11,23 @@ This is a Python API for AI document editing, available for free public use.
 - Virtual Environment ([Documentation](https://docs.python.org/3/library/venv.html))
 
 ### Optional Dependencies
-
+Docker ([Install](https://docs.docker.com/engine/install/))
 
 ## Local Development Setup
 1. Create virtusl environment
->> python3 -m venv .venv
+> python3 -m venv .venv
 
 2. Install packages
->> pip install -r requirements.txt
+> pip install -r requirements.txt
 
 3. Run server:
->> python server.py
-
+> python server.py
 
 ## Docker Setup
 1. Install - Docker ([Installation Guide](https://docs.docker.com/engine/install/))
 
 2. Build docker image using bash script
->> ./run_docker.sh
+> ./run_docker.sh
 
-### Optional Docker commands
-Stop docker container and remove image using bash script
->> ./remove_docker_container.sh
+3. Stop docker container and remove image using bash script
+> ./remove_docker_container.sh
