@@ -15,27 +15,39 @@ Docker ([Install](https://docs.docker.com/engine/install/))
 
 ## Local Development Setup
 1. Create virtusl environment
-> python3 -m venv .venv
+```bash
+python3 -m venv .venv
+```
 
 2. Install packages
-> pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
+```
 
 3. Run server:
-> python server.py
+```bash
+python server.py
+```
 
 ## Docker Setup
 1. Install - Docker ([Installation Guide](https://docs.docker.com/engine/install/))
 
 2. Build docker image using bash script
-> ./run_docker.sh
+```bash
+./run_docker.sh
+```
 
 3. Stop docker container and remove image using bash script
-> ./remove_docker_container.sh
+```bash
+./remove_docker_container.sh
+```
 
 ## For contributors:
 1. Create a new branch
 2. Validate your change with Pylint
->> pylint --rcfile=pyproject.toml .
+```bash
+pylint --rcfile=pyproject.toml .
+```
 3. Commit and push your changes for review
 
 Thank you!
