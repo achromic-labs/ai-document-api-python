@@ -2,4 +2,4 @@ Flask
 google-generativeai
 grpcio
 flask-cors
-
+pylint

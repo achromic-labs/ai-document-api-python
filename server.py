@@ -1,8 +1,13 @@
-from flask import Flask
-import google.generativeai as genai
-from constants import GEMINI_API_KEY, MODEL_NAME  # Import API key and model name from constants
-from flask import request, jsonify
+# Standard library imports
+import json
+# Third-party imports
+from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
+import google.generativeai as genai
+
+# Local imports
+from constants import GEMINI_API_KEY, MODEL_NAME  # Import API key and model name from constants
+
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -41,29 +46,30 @@ def index():
     # Validate prompt
     if not prompt or not isinstance(prompt, str):
         return jsonify({"error": "Invalid or missing 'prompt' field"}), 400
-
+    
+    # Construct the final prompt based on whether additional text is provided
+    llm_response_formatting = "Please return only the final response and no additional context."
+    if text:
+        final_prompt = f"{prompt} to the following text: {text}. {llm_response_formatting}"
+    else:
+        final_prompt = f"Generated new text based on prompt: Prompt: {prompt}. {llm_response_formatting}"
+    
     try:
-        # Construct the final prompt based on whether additional text is provided
-        llm_response_formatting = "Please return only the final response and no additional context."
-        if text:
-            final_prompt = f"{prompt} to the following text: {text}. {llm_response_formatting}"
-        else:
-            final_prompt = f"Generated new text based on prompt: Prompt: {prompt}. {llm_response_formatting}"
-
         # Generate content using the Gemini model
         result = model.generate_content(final_prompt)
         # Clean up response by removing asterisks and handle empty results
         response = result.text.replace("*", "") if result and result.text else ""
 
         # Return successful response
-        return jsonify({
-            "result": response
-        }), 200
-    except Exception as e:
-        # Return error response if something goes wrong
-        return jsonify({
-            "error": str(e)
-        }), 500
+        return jsonify({"result": response}), 200
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON format"}), 400
+    except genai.types.generation_types.BlockedPromptException:
+        return jsonify({"error": "Content blocked by safety filters"}), 422
+    except ConnectionError:
+        return jsonify({"error": "Failed to connect to AI service"}), 503
+    except ValueError as e:
+        return jsonify({"error": f"Invalid value: {str(e)}"}), 400
 
 # Run the Flask application
 if __name__ == '__main__':

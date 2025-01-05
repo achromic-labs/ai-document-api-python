@@ -1,6 +1,6 @@
 # ai-document-api-python
 # Description
-This is a Python API for AI document editing, available for free public use.
+This is a Python (Flask) based API for AI document editing, available for free public use.
 
 ## IMPORTANT: place your Gemini API into constants.py file ([Google AI Studio](https://aistudio.google.com/app/apikey))
 (create an account if needed)
@@ -31,3 +31,11 @@ Docker ([Install](https://docs.docker.com/engine/install/))
 
 3. Stop docker container and remove image using bash script
 > ./remove_docker_container.sh
+
+## For contributors:
+1. Create a new branch
+2. Validate your change with Pylint
+>> pylint --rcfile=pyproject.toml .
+3. Commit and push your changes for review
+
+Thank you!
