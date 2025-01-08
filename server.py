@@ -71,6 +71,16 @@ def index():
     except ValueError as e:
         return jsonify({"error": f"Invalid value: {str(e)}"}), 400
 
+
+@app.route('/health', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def health_check():
+    """
+    Health check endpoint that returns a simple message
+    """
+    return jsonify({"response": "OK"}), 200
+
+
 # Run the Flask application
 if __name__ == '__main__':
     app.run(debug=False, host="0.0.0.0", port=8080)  # Run on all network interfaces on port 8080
