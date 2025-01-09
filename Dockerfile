@@ -7,17 +7,29 @@ LABEL container_name="ai-document-api-python"
 # Set working directory
 WORKDIR /app
 
-# Copy requirements file
+# Copy requirements.txt
 COPY requirements.txt .
 
-# Install dependencies
+# Install dependencies and cloudflared
+RUN apt-get update && apt-get install -y curl gpg && \
+    curl -L https://pkg.cloudflare.com/cloudflare-main.gpg -o /usr/share/keyrings/cloudflare-main.gpg && \
+    echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared focal main' | tee /etc/apt/sources.list.d/cloudflared.list && \
+    apt-get update && \
+    apt-get install -y cloudflared && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN pip install -r requirements.txt
 
 # Copy application code
 COPY . .
 
-# Expose port (adjust if needed)
+# Expose port
 EXPOSE 8080
 
-# Run the application
-CMD ["python", "server.py"]
+# # Create start script
+# RUN echo '#!/bin/bash\npython server.py & \ncloudflared tunnel --url http://localhost:8080' > start.sh && \
+#     chmod +x start.sh
+
+# Run both commands
+CMD ["./start_server_tunnel.sh"]

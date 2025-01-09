@@ -72,7 +72,7 @@ def index():
         return jsonify({"error": f"Invalid value: {str(e)}"}), 400
 
 
-@app.route('/health', methods=['GET'])
+@app.route('/health/', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def health_check():
     """
