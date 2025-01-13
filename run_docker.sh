@@ -4,8 +4,8 @@
 set -e
 
 # Configuration
-IMAGE_NAME="ai-document-api-python"
-CONTAINER_NAME="ai-document-api-python"
+IMAGE_NAME="potext-api-python"
+CONTAINER_NAME="potext-api-python"
 PORT="8080"
 
 echo "=== AI Document API Docker Deployment ==="

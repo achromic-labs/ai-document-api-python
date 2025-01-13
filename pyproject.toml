@@ -5,7 +5,6 @@ disable = [
     "C0103",  # invalid-name
     "C0303",  # trailing-whitespace
     "W0611",  # unused-import
-    "E0401",  # Unable to import 'constants'
     "R0911",  # Too many return statements
 ]
 ignore = ["CVS"]

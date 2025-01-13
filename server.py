@@ -1,12 +1,16 @@
 # Standard library imports
 import json
 # Third-party imports
+from dotenv import dotenv_values
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 import google.generativeai as genai
 
 # Local imports
-from constants import GEMINI_API_KEY, MODEL_NAME  # Import API key and model name from constants
+config = dotenv_values(".env")
+
+GEMINI_API_KEY = config.get('GEMINI_API_KEY')
+MODEL_NAME = config.get('MODEL_NAME')
 
 
 # Initialize Flask application
