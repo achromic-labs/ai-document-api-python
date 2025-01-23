@@ -1,4 +1,4 @@
-# potext-api-python
+# https://www.potext.com
 # Description
 This is a Python (Flask) based API for AI document editing, available for free public use.
 
