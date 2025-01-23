@@ -3,15 +3,41 @@ from dotenv import dotenv_values
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 from langchain_google_genai import GoogleGenerativeAI
+from langchain_openai import OpenAI
+from langchain_anthropic import ChatAnthropic
 from langchain.prompts import PromptTemplate
 
 
 config = dotenv_values(".env")
 
+# API Keys
+GEMINI_API_KEY = config.get('GEMINI_API_KEY', '')
+OPENAI_API_KEY = config.get('OPENAI_API_KEY', '')
+ANTHROPIC_API_KEY = config.get('ANTHROPIC_API_KEY', '')
 
-GEMINI_API_KEY = config.get('GEMINI_API_KEY')
-MODEL_NAME = config.get('MODEL_NAME')
+# Model names
+GEMINI_MODEL = config.get('GEMINI_MODEL', 'gemini-1.5-flash')
+OPENAI_MODEL = config.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+CLAUDE_MODEL = config.get('CLAUDE_MODEL', 'claude-2')
 
+# Initialize models
+models = {
+    'gemini': GoogleGenerativeAI(
+        model=GEMINI_MODEL,
+        google_api_key=GEMINI_API_KEY,
+        temperature=0.7
+    ),
+    'openai': OpenAI(
+        model_name=OPENAI_MODEL,
+        openai_api_key=OPENAI_API_KEY,
+        temperature=0.7
+    ),
+    'claude': ChatAnthropic(
+        model=CLAUDE_MODEL,
+        anthropic_api_key=ANTHROPIC_API_KEY,
+        temperature=0.7
+    )
+}
 
 app = Flask(__name__)
 cors = CORS(app, resources={
@@ -24,20 +50,12 @@ cors = CORS(app, resources={
     }
 })
 
-# Initialize LangChain Gemini model
-llm = GoogleGenerativeAI(
-    model=MODEL_NAME,
-    google_api_key=GEMINI_API_KEY,
-    temperature=0.7
-)
 
-# prompt with text that needs to be replaced
 text_prompt = PromptTemplate(
     input_variables=["prompt", "text"],
     template="{prompt} to the following text: {text}. Please return only the final response and no additional context."
 )
 
-# single prompt
 simple_prompt = PromptTemplate(
     input_variables=["prompt"],
     template="Generated new text based on prompt: Prompt: {prompt}. Please return only the final response and no additional context."
@@ -55,9 +73,13 @@ def index():
     
     prompt = data.get('prompt', '')
     text = data.get('data', '')
+    model_name = data.get('model', 'gemini').lower()  # Default to Gemini
     
     if not prompt or not isinstance(prompt, str):
         return jsonify({"error": "Invalid or missing 'prompt' field"}), 400
+    
+    if model_name not in models:
+        return jsonify({"error": f"Invalid model. Choose from: {', '.join(models.keys())}"}), 400
     
     try:
         if text:
@@ -65,6 +87,7 @@ def index():
         else:
             final_prompt = simple_prompt.format(prompt=prompt)
         
+        llm = models[model_name]
         response = llm.invoke(final_prompt)
         
         return jsonify({"result": response}), 200
