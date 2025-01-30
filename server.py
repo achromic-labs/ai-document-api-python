@@ -1,79 +1,111 @@
-# Standard library imports
 import json
-# Third-party imports
 from dotenv import dotenv_values
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
-import google.generativeai as genai
+from langchain_google_genai import GoogleGenerativeAI
+# from langchain_openai import OpenAI
+from langchain_anthropic import ChatAnthropic
+from langchain.prompts import PromptTemplate
 
-# Local imports
+
 config = dotenv_values(".env")
 
-GEMINI_API_KEY = config.get('GEMINI_API_KEY')
-MODEL_NAME = config.get('MODEL_NAME')
+# API Keys
+GEMINI_API_KEY = config.get('GEMINI_API_KEY', '')
+OPENAI_API_KEY = config.get('OPENAI_API_KEY', '')
+ANTHROPIC_API_KEY = config.get('ANTHROPIC_API_KEY', '')
 
+# Model names
+GEMINI_MODEL = config.get('GEMINI_MODEL', 'gemini-1.5-flash')
+OPENAI_MODEL = config.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+CLAUDE_MODEL = config.get('CLAUDE_MODEL', 'claude-2')
 
-# Initialize Flask application
+# Initialize models
+models = {
+    'gemini': GoogleGenerativeAI(
+        model=GEMINI_MODEL,
+        google_api_key=GEMINI_API_KEY,
+        temperature=0.7
+    ),
+    # 'openai': OpenAI(
+    #     model_name=OPENAI_MODEL,
+    #     openai_api_key=OPENAI_API_KEY,
+    #     temperature=0.7
+    # ),
+    'claude': ChatAnthropic(
+        model=CLAUDE_MODEL,
+        anthropic_api_key=ANTHROPIC_API_KEY,
+        temperature=0.7
+    )
+}
+
 app = Flask(__name__)
 cors = CORS(app, resources={
-    r"/*": {  # Apply to all routes
-        "origins": "*",  # Allow your frontend origin
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Allow these HTTP methods
-        "allow_headers": ["Content-Type", "Authorization", "baggage"],  # Explicitly allow the 'baggage' header
+    r"/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "baggage"],
         "expose_headers": ["Content-Range", "X-Content-Range"],
-        "supports_credentials": True  # Enable if you need to send cookies
+        "supports_credentials": True
     }
 })
 
-# Configure Gemini AI with API key
-genai.configure(api_key=GEMINI_API_KEY)
 
-# Create instance of the generative model
-model = genai.GenerativeModel(MODEL_NAME)
+text_prompt = PromptTemplate(
+    input_variables=["prompt", "text", "context"],
+    template="""
+            <beginning of context>
+            {context}
+            <end of context>
+            {prompt} to the following text: {text}. Please return only the final response and no additional context.
+        """.strip()
+    )
+
+simple_prompt = PromptTemplate(
+    input_variables=["prompt", "context"],
+    template="""
+            <beginning of context>
+            {context}
+            <end of context>
+            Generated new text based on prompt: {prompt}. Please return only the final response and no additional context.
+        """.strip()
+    )
 
 @app.route('/', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def index():
     """
     Main endpoint that handles POST requests for text generation
-    Accepts JSON with 'prompt' and optional 'data' fields
     """
-    # Parse incoming JSON data
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
     
-    # Extract prompt and text from the request
     prompt = data.get('prompt', '')
     text = data.get('data', '')
+    context = data.get('context', '')  # Add context handling
+    model_name = data.get('model', 'gemini').lower()
     
-    # Validate prompt
     if not prompt or not isinstance(prompt, str):
         return jsonify({"error": "Invalid or missing 'prompt' field"}), 400
     
-    # Construct the final prompt based on whether additional text is provided
-    llm_response_formatting = "Please return only the final response and no additional context."
-    if text:
-        final_prompt = f"{prompt} to the following text: {text}. {llm_response_formatting}"
-    else:
-        final_prompt = f"Generated new text based on prompt: Prompt: {prompt}. {llm_response_formatting}"
+    if model_name not in models:
+        return jsonify({"error": f"Invalid model. Choose from: {', '.join(models.keys())}"}), 400
     
     try:
-        # Generate content using the Gemini model
-        result = model.generate_content(final_prompt)
-        # Clean up response by removing asterisks and handle empty results
-        response = result.text.replace("*", "") if result and result.text else ""
-
-        # Return successful response
+        if text:
+            final_prompt = text_prompt.format(prompt=prompt, text=text, context=context)
+        else:
+            final_prompt = simple_prompt.format(prompt=prompt, context=context)
+        
+        llm = models[model_name]
+        response = llm.invoke(final_prompt)
+        
         return jsonify({"result": response}), 200
     except json.JSONDecodeError:
         return jsonify({"error": "Invalid JSON format"}), 400
-    except genai.types.generation_types.BlockedPromptException:
-        return jsonify({"error": "Content blocked by safety filters"}), 422
-    except ConnectionError:
-        return jsonify({"error": "Failed to connect to AI service"}), 503
-    except ValueError as e:
-        return jsonify({"error": f"Invalid value: {str(e)}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route('/health/', methods=['GET'])
@@ -85,6 +117,5 @@ def health_check():
     return jsonify({"response": "OK"}), 200
 
 
-# Run the Flask application
 if __name__ == '__main__':
-    app.run(debug=False, host="0.0.0.0", port=8080)  # Run on all network interfaces on port 8080
+    app.run(debug=False, host="0.0.0.0", port=8080)
